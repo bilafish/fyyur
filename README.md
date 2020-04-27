@@ -112,32 +112,32 @@ Best of luck in your final project! Fyyur depends on you!
 
 ### Development Setup
 
-First, [install Flask](http://flask.pocoo.org/docs/1.0/installation/#install-flask) if you haven't already.
+First, [install Pipenv](https://pipenv.pypa.io/en/latest/install/#installing-pipenv) if you haven't already. Pipenv is a Python package manage similar to yarn & npm.
 
   ```
-  $ cd ~
-  $ sudo pip3 install Flask
+  $ pip3 install pipenv
   ```
 
-To start and run the local development server,
+To start and run the local development server:
+1. Clone the repo to your machine:
+  ```bash
+  $ git clone https://github.com/bilafish/fyyur.git
+  ```
 
-1. Initialize and activate a virtualenv:
+2. Initialize and activate pipenv:
   ```
   $ cd YOUR_PROJECT_DIRECTORY_PATH/
-  $ virtualenv --no-site-packages env
-  $ source env/bin/activate
+  $ pipenv shell
   ```
 
-2. Install the dependencies:
+3. Install the necessary dependencies:
   ```
-  $ pip install -r requirements.txt
+  $ pipenv install
   ```
 
-3. Run the development server:
+4. Run the Flask server:
   ```
-  $ export FLASK_APP=myapp
-  $ export FLASK_ENV=development # enables debug mode
   $ python3 app.py
   ```
 
-4. Navigate to Home page [http://localhost:5000](http://localhost:5000)
+5. Navigate to Homepage [http://localhost:5000](http://localhost:5000)
