@@ -12,6 +12,7 @@ import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
+from flask_migrate import Migrate
 
 # ----------------------------------------------------------------------------#
 # App Config.
@@ -22,7 +23,7 @@ moment = Moment(app)
 app.config.from_object("config")
 db = SQLAlchemy(app)
 
-# TODO: connect to a local postgresql database
+migrate = Migrate(app, db)
 
 # ----------------------------------------------------------------------------#
 # Models.
@@ -95,27 +96,33 @@ def index():
 def venues():
     # TODO: replace with real venues data.
     #       num_shows should be aggregated based on number of upcoming shows per venue.
+    # Query data from  Venue table in db
+    dbData = Venue.query.all()
+    # Transform data into dictionary
+    venuesDict = {}
+    for venue in dbData:
+        if (venue.city, venue.state) not in venuesDict:
+            venuesDict[venue.city, venue.state] = [
+                {"id": venue.id, "name": venue.name, "num_upcoming_shows": 0}
+            ]
+        else:
+            venuesDict[venue.city, venue.state].append(
+                {"id": venue.id, "name": venue.name, "num_upcoming_shows": 0}
+            )
+
     data = [
-        {
-            "city": "San Francisco",
-            "state": "CA",
-            "venues": [
-                {"id": 1, "name": "The Musical Hop", "num_upcoming_shows": 0,},
-                {
-                    "id": 3,
-                    "name": "Park Square Live Music & Coffee",
-                    "num_upcoming_shows": 1,
-                },
-            ],
-        },
-        {
-            "city": "New York",
-            "state": "NY",
-            "venues": [
-                {"id": 2, "name": "The Dueling Pianos Bar", "num_upcoming_shows": 0,}
-            ],
-        },
+        {"city": city, "state": state, "venues": venuesDict[city, state],}
+        for city, state in venuesDict
     ]
+
+    # data = [
+    #     {
+    #         "city": "San Francisco",
+    #         "state": "CA",
+    #         "venues": venuesDict["San Francisco"],
+    #     },
+    #     {"city": "New York", "state": "NY", "venues": venuesDict["New York"],},
+    # ]
     return render_template("pages/venues.html", areas=data)
 
 
