@@ -114,15 +114,6 @@ def venues():
         {"city": city, "state": state, "venues": venuesDict[city, state],}
         for city, state in venuesDict
     ]
-
-    # data = [
-    #     {
-    #         "city": "San Francisco",
-    #         "state": "CA",
-    #         "venues": venuesDict["San Francisco"],
-    #     },
-    #     {"city": "New York", "state": "NY", "venues": venuesDict["New York"],},
-    # ]
     return render_template("pages/venues.html", areas=data)
 
 
@@ -131,14 +122,17 @@ def search_venues():
     # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+    searchTerm = request.form.get("search_term", "")
+    dbData = Venue.query.filter(Venue.name.ilike(f"%{searchTerm}%")).all()
     response = {
-        "count": 1,
-        "data": [{"id": 2, "name": "The Dueling Pianos Bar", "num_upcoming_shows": 0,}],
+        "count": len(dbData),
+        "data": [
+            {"id": result.id, "name": result.name, "num_upcoming_shows": 0,}
+            for result in dbData
+        ],
     }
     return render_template(
-        "pages/search_venues.html",
-        results=response,
-        search_term=request.form.get("search_term", ""),
+        "pages/search_venues.html", results=response, search_term=searchTerm,
     )
 
 
