@@ -13,6 +13,10 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
+from sqlalchemy import TypeDecorator
+from sqlalchemy.dialects.postgresql import ARRAY, ENUM
+from enum import Enum
+import re
 
 # ----------------------------------------------------------------------------#
 # App Config.
@@ -30,17 +34,56 @@ migrate = Migrate(app, db)
 # ----------------------------------------------------------------------------#
 
 
+class ArrayOfEnum(TypeDecorator):
+    impl = ARRAY
+
+    def bind_expression(self, bindvalue):
+        return sa.cast(bindvalue, self)
+
+    def result_processor(self, dialect, coltype):
+        super_rp = super(ArrayOfEnum, self).result_processor(dialect, coltype)
+
+        def handle_raw_string(value):
+            inner = re.match(r"^{(.*)}$", value).group(1)
+            return inner.split(",") if inner else []
+
+        def process(value):
+            if value is None:
+                return None
+            return super_rp(handle_raw_string(value))
+
+        return process
+
+
+class GenreType(Enum):
+    jazz = "Jazz"
+    classical = "Classical"
+    reggae = "Reggae"
+    swing = "Swing"
+    folk = "Folk"
+    r_n_b = "R&B"
+    hip_hop = "Hip-Hop"
+    rock_n_roll = "Rock n Roll"
+
+    def __str__(self):
+        return str(self.value)
+
+
 class Venue(db.Model):
     __tablename__ = "Venue"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    genres = db.Column(ArrayOfEnum(ENUM(GenreType, name="genre_type")))
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
+    website = db.Column(db.String(120))
     facebook_link = db.Column(db.String(120))
+    seeking_talent = db.Column(db.Boolean)
+    seeking_description = db.Column(db.Text)
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -114,31 +157,23 @@ def venues():
         {"city": city, "state": state, "venues": venuesDict[city, state],}
         for city, state in venuesDict
     ]
-
-    # data = [
-    #     {
-    #         "city": "San Francisco",
-    #         "state": "CA",
-    #         "venues": venuesDict["San Francisco"],
-    #     },
-    #     {"city": "New York", "state": "NY", "venues": venuesDict["New York"],},
-    # ]
     return render_template("pages/venues.html", areas=data)
 
 
 @app.route("/venues/search", methods=["POST"])
 def search_venues():
-    # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
-    # seach for Hop should return "The Musical Hop".
-    # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+    # TODO: Replace num_upcoming_shows field
+    searchTerm = request.form.get("search_term", "")
+    dbData = Venue.query.filter(Venue.name.ilike(f"%{searchTerm}%")).all()
     response = {
-        "count": 1,
-        "data": [{"id": 2, "name": "The Dueling Pianos Bar", "num_upcoming_shows": 0,}],
+        "count": len(dbData),
+        "data": [
+            {"id": result.id, "name": result.name, "num_upcoming_shows": 0,}
+            for result in dbData
+        ],
     }
     return render_template(
-        "pages/search_venues.html",
-        results=response,
-        search_term=request.form.get("search_term", ""),
+        "pages/search_venues.html", results=response, search_term=searchTerm,
     )
 
 
@@ -146,6 +181,10 @@ def search_venues():
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
     # TODO: replace with real venue data from the venues table, using venue_id
+    dbData = Venue.query.get(1)
+    print(dbData.name)
+    for genre in dbData.genres:
+        print(genre)
     data1 = {
         "id": 1,
         "name": "The Musical Hop",
