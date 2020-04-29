@@ -17,11 +17,11 @@ Fyyur is a musical venue and artist booking site that facilitates the discovery 
 ```sh
 ├── README.md
 ├── app.py *** the main driver of the app. Includes your SQLAlchemy models.
-                  "python app.py" to run after installing dependences
+                  "python3 app.py" to run after installing dependences
 ├── config.py *** Database URLs, CSRF generation, etc
 ├── error.log
 ├── forms.py *** Your forms
-├── requirements.txt *** The dependencies we need to install with "pip3 install -r requirements.txt"
+├── requirements.txt *** The dependencies we need to install with "pipenv install"
 ├── static
 │   ├── css
 │   ├── font
