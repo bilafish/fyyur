@@ -145,19 +145,35 @@ def index():
 
 @app.route("/venues")
 def venues():
-    # TODO: num_shows should be aggregated based on number of upcoming shows per venue.
-    # Query data from  Venue table in db
+    # Query data from Venue table in db
     dbData = Venue.query.all()
+    now = datetime.now()
+
+    def countIsUpcoming(shows, now):
+        result = 0
+        for show in shows:
+            if show.start_time > now:
+                result += 1
+        return result
+
     # Transform data into dictionary
     venuesDict = {}
     for venue in dbData:
         if (venue.city, venue.state) not in venuesDict:
             venuesDict[venue.city, venue.state] = [
-                {"id": venue.id, "name": venue.name, "num_upcoming_shows": 0}
+                {
+                    "id": venue.id,
+                    "name": venue.name,
+                    "num_upcoming_shows": countIsUpcoming(venue.shows, now),
+                }
             ]
         else:
             venuesDict[venue.city, venue.state].append(
-                {"id": venue.id, "name": venue.name, "num_upcoming_shows": 0}
+                {
+                    "id": venue.id,
+                    "name": venue.name,
+                    "num_upcoming_shows": countIsUpcoming(venue.shows, now),
+                }
             )
 
     data = [
