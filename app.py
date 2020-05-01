@@ -130,6 +130,19 @@ def format_datetime(value, format="medium"):
 app.jinja_env.filters["datetime"] = format_datetime
 
 # ----------------------------------------------------------------------------#
+# Helper Functions
+# ----------------------------------------------------------------------------#
+
+
+def countIsUpcoming(shows, now):
+    result = 0
+    for show in shows:
+        if show.start_time > now:
+            result += 1
+    return result
+
+
+# ----------------------------------------------------------------------------#
 # Controllers.
 # ----------------------------------------------------------------------------#
 
@@ -148,13 +161,6 @@ def venues():
     # Query data from Venue table in db
     dbData = Venue.query.all()
     now = datetime.now()
-
-    def countIsUpcoming(shows, now):
-        result = 0
-        for show in shows:
-            if show.start_time > now:
-                result += 1
-        return result
 
     # Transform data into dictionary
     venuesDict = {}
@@ -185,13 +191,17 @@ def venues():
 
 @app.route("/venues/search", methods=["POST"])
 def search_venues():
-    # TODO: Replace num_upcoming_shows field
     searchTerm = request.form.get("search_term", "")
     dbData = Venue.query.filter(Venue.name.ilike(f"%{searchTerm}%")).all()
+    now = datetime.now()
     response = {
         "count": len(dbData),
         "data": [
-            {"id": result.id, "name": result.name, "num_upcoming_shows": 0,}
+            {
+                "id": result.id,
+                "name": result.name,
+                "num_upcoming_shows": countIsUpcoming(result.shows, now),
+            }
             for result in dbData
         ],
     }
