@@ -229,7 +229,6 @@ def search_venues():
 @app.route("/venues/<int:venue_id>")
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
-    # TODO: Add query to get shows data
     dbData = (
         Venue.query.join(Show, isouter=True)
         .join(Artist, isouter=True)
@@ -310,14 +309,18 @@ def search_artists():
     # search for "band" should return "The Wild Sax Band".
     searchTerm = request.form.get("search_term", "")
     dbData = Artist.query.filter(Artist.name.ilike(f"%{searchTerm}%")).all()
+    now = datetime.now()
     response = {
         "count": len(dbData),
         "data": [
-            {"id": result.id, "name": result.name, "num_upcoming_shows": 0,}
+            {
+                "id": result.id,
+                "name": result.name,
+                "num_upcoming_shows": countIsUpcoming(result.shows, now),
+            }
             for result in dbData
         ],
     }
-
     return render_template(
         "pages/search_artists.html", results=response, search_term=searchTerm,
     )
