@@ -134,15 +134,24 @@ app.jinja_env.filters["datetime"] = format_datetime
 # ----------------------------------------------------------------------------#
 
 
-def sortUpcomingShows(shows, now):
+def sortUpcomingShows(shows, now, isArtist=False):
     sortedShows = {"past": [], "upcoming": []}
     for show in shows:
-        showDict = {
-            "artist_id": show.artist.id,
-            "artist_name": show.artist.name,
-            "artist_image_link": show.artist.image_link,
-            "start_time": show.start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        }
+        # Check if sorting for artist or venue route
+        if isArtist:
+            showDict = {
+                "venue_id": show.venue.id,
+                "venue_name": show.venue.name,
+                "venue_image_link": show.venue.image_link,
+                "start_time": show.start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            }
+        else:
+            showDict = {
+                "artist_id": show.artist.id,
+                "artist_name": show.artist.name,
+                "artist_image_link": show.artist.image_link,
+                "start_time": show.start_time.strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            }
         if show.start_time > now:
             sortedShows["upcoming"].append(showDict)
         else:
@@ -329,7 +338,15 @@ def search_artists():
 @app.route("/artists/<int:artist_id>")
 def show_artist(artist_id):
     # shows the artist page with the given artist_id
-    dbData = Artist.query.get(artist_id)
+    dbData = (
+        Artist.query.join(Show, isouter=True)
+        .join(Venue, isouter=True)
+        .filter(Artist.id == artist_id)
+        .first()
+    )
+    now = datetime.now()
+    # Sort shows based on start_time into whether upcoming or past
+    sortedShows = sortUpcomingShows(dbData.shows, now, True)
     parsedData = {
         "id": dbData.id,
         "name": dbData.name,
@@ -342,17 +359,10 @@ def show_artist(artist_id):
         "seeking_venue": dbData.seeking_venue,
         "seeking_description": dbData.seeking_description,
         "image_link": dbData.image_link,
-        "past_shows": [
-            {
-                "venue_id": 1,
-                "venue_name": "The Musical Hop",
-                "venue_image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60",
-                "start_time": "2019-05-21T21:30:00.000Z",
-            }
-        ],
-        "upcoming_shows": [],
-        "past_shows_count": 1,
-        "upcoming_shows_count": 0,
+        "past_shows": sortedShows["past"],
+        "upcoming_shows": sortedShows["upcoming"],
+        "past_shows_count": len(sortedShows["past"]),
+        "upcoming_shows_count": len(sortedShows["upcoming"]),
     }
 
     return render_template("pages/show_artist.html", artist=parsedData)
